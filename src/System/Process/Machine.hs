@@ -8,35 +8,32 @@ import System.IO (Handle)
 import System.IO.Machine
 import System.Process (CreateProcess(..), ProcessHandle, StdStream(CreatePipe), createProcess, shell, waitForProcess)
 
--- TODO Use `async` in withShell to consume stdOut/stdErr simultaneously
--- TODO Find proper letter for `ProcessMachines` type parameters
+type ProcessMachines a b k = (Maybe (ProcessT IO a b), Maybe (MachineT IO k a), Maybe (MachineT IO k a))
 
-data ProcessMachines a a0 k0 = ProcessMachines (ProcessT IO a a0) (MachineT IO k0 a) (MachineT IO k0 a)
-type ProcessExecution a b = (ExitCode, b)
+mStdIn :: IOSource a -> ProcessMachines a a0 k0 -> IO ()
+mStdIn ms (Just stdIn, _, _)  = runT_ $ stdIn <~ ms
+mStdIn ms _                   = return ()
 
-createProcessMachines :: IOData a => forall a0 k0. IODataMode a -> CreateProcess -> IO (ProcessMachines a a0 k0, ProcessHandle)
-createProcessMachines (IODataMode r w) cp = do
-  (pIn, pOut, pErr, pHandle) <- createProcess cp
-  let pInSink = getOrStop $ fmap (sinkHandleWith w) pIn
-  let pOutSource = getOrStop $ fmap sourceHandle pOut
-  let pErrSource = getOrStop $ fmap sourceHandle pOut
-  return $ (ProcessMachines pInSink pOutSource pErrSource, pHandle) where
-    sourceHandle = sourceHandleWith r
-    getOrStop = maybe stopped id
+mStdOut :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO [b]
+mStdOut mp (_, Just stdOut, _)  = runT $ mp <~ stdOut
+mStdOut mp _                    = return []
 
-withProcessMachines :: IOData a => IODataMode a -> CreateProcess -> (ProcessMachines a a0 k0 -> IO b) -> IO (ProcessExecution a b)
-withProcessMachines m cp f = do
+mStdErr :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO [b]
+mStdErr mp (_, _, Just stdErr)  = runT $ mp <~ stdErr
+mStdErr mp _                    = return []
+
+callProcessMachines :: IOData a => forall b k. IODataMode a -> CreateProcess -> (ProcessMachines a b k -> IO c) -> IO (ExitCode, c)
+callProcessMachines m cp f = do
   (machines, pHandle) <- createProcessMachines m cp
   x                   <- f machines
   exitCode            <- waitForProcess pHandle
   return (exitCode, x)
 
-callCommandMachine :: IOData a => IODataMode a -> String -> ProcessT IO a b -> IO (Either (ExitCode, [a]) [b])
-callCommandMachine m c mp = do
-  (exitCode, (errors, xs)) <- withProcessMachines m p $
-    \(ProcessMachines _ stdOut stdErr) -> do
-      xs <- runT $ mp <~ stdOut
-      errors <- runT stdErr
-      return (errors, xs)
-  return $ if exitCode == ExitSuccess then Right xs else Left (exitCode, errors) where
-    p = (shell c) { std_out = CreatePipe, std_err = CreatePipe }
+createProcessMachines :: IOData a => forall b k. IODataMode a -> CreateProcess -> IO (ProcessMachines a b k, ProcessHandle)
+createProcessMachines (IODataMode r w) cp = do
+  (pIn, pOut, pErr, pHandle) <- createProcess cp
+  let pInSink = fmap (sinkHandleWith w) pIn
+  let pOutSource = fmap sourceHandle pOut
+  let pErrSource = fmap sourceHandle pOut
+  return $ ((pInSink, pOutSource, pErrSource), pHandle) where
+    sourceHandle = sourceHandleWith r
