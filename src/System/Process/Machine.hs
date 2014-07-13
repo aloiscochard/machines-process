@@ -30,7 +30,7 @@ callProcessMachines m cp f = do
   return (exitCode, x)
 
 createProcessMachines :: IOData a => forall b k. IODataMode a -> CreateProcess -> IO (ProcessMachines a b k, ProcessHandle)
-createProcessMachines (IODataMode r w) cp = do
+createProcessMachines (r, w) cp = do
   (pIn, pOut, pErr, pHandle) <- createProcess cp
   let pInSink = fmap (sinkHandleWith w) pIn
   let pOutSource = fmap sourceHandle pOut
