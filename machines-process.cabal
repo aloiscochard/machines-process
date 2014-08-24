@@ -1,5 +1,5 @@
 name:                machines-process
-version:             0.0.0.1
+version:             0.1.0.0
 synopsis:            Process (system) utilities for the machines library
 homepage:            http://github.com/aloiscochard/machines-io
 license:             Apache-2.0
@@ -17,8 +17,8 @@ library
   exposed-modules: 
     System.Process.Machine
   build-depends:       
-      base >=4.7 && <4.8
-    , chunked-data
-    , machines
-    , machines-io
-    , process
+      base                >= 4.6      && < 5
+    , chunked-data        >= 0.1      && < 0.2
+    , machines            >= 0.2      && < 0.3
+    , machines-io         >= 0.1      && < 0.2
+    , process             >= 1.1      && < 1.3
