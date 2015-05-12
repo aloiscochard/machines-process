@@ -18,7 +18,7 @@ library
     System.Process.Machine
   build-depends:       
       base                >= 4.6      && < 5
-    , chunked-data        >= 0.1      && < 0.2
+    , chunked-data        >= 0.1      && < 0.3
     , machines            >= 0.2      && < 0.5
     , machines-io         >= 0.2      && < 0.3
     , process             >= 1.1      && < 1.3
