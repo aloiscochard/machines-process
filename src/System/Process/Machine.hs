@@ -17,6 +17,12 @@ mStdOut :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO [b]
 mStdOut mp (_, Just stdOut, _)  = runT $ mp <~ stdOut
 mStdOut _  _                    = return []
 
+{--
+mStdOut_ :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO ()
+mStdOut mp (_, Just stdOut, _)  = runT_ $ mp <~ stdOut
+mStdOut _  _                    = return ()
+--}
+
 mStdErr :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO [b]
 mStdErr mp (_, _, Just stdErr)  = runT $ mp <~ stdErr
 mStdErr _  _                    = return []
