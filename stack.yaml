@@ -1,0 +1,7 @@
+resolver: lts-17.8
+packages:
+- '.'
+extra-deps: 
+- machines-io-0.2.0.14
+flags: {}
+extra-package-dbs: []
