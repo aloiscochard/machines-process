@@ -9,6 +9,7 @@ import System.Process (CreateProcess(..), ProcessHandle, createProcess, waitForP
 
 type ProcessMachines a b k = (Maybe (ProcessT IO a b), Maybe (MachineT IO k a), Maybe (MachineT IO k a))
 
+
 mStdIn :: IOSource a -> ProcessMachines a a0 k0 -> IO ()
 mStdIn ms (Just stdIn, _, _)  = runT_ $ stdIn <~ ms
 mStdIn _  _                   = return ()
@@ -16,6 +17,13 @@ mStdIn _  _                   = return ()
 mStdOut :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO [b]
 mStdOut mp (_, Just stdOut, _)  = runT $ mp <~ stdOut
 mStdOut _  _                    = return []
+
+mStdOutputs :: ProcessT IO (Either a a) b -> ProcessMachines a a0 (Is a0) -> IO [b]
+mStdOutputs mp (_, Just stdOut, Just stdErr)  = runT $ mp <~ wye stdErr stdOut slurp where
+  slurp = repeatedly $ do
+    res <- awaits Z
+    yield res
+mStdOutputs _  _                              = return []
 
 {--
 mStdOut_ :: ProcessT IO a b -> ProcessMachines a a0 k0 -> IO ()
